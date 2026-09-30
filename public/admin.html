@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin • LoginMail</title>
+<style>
+:root{--bg:#060d17;--panel:#0b1728;--panel2:#0e2035;--line:#1c3551;--text:#eef6ff;--muted:#8fa8c4;--blue:#2d8cff;--red:#ff5f75;--green:#44d39a}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#050a12,#07182b);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial}.wrap{max-width:1180px;margin:auto;padding:28px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.title h1{margin:0;font-size:27px}.title p{color:var(--muted);margin:6px 0}.btn{border:1px solid var(--line);background:#0c1a2c;color:#dbeaff;padding:10px 14px;border-radius:10px;cursor:pointer}.btn.primary{background:linear-gradient(135deg,#247fff,#3aa3ff);border:0;color:white;font-weight:800}.grid{display:grid;grid-template-columns:380px 1fr;gap:18px}.panel{background:rgba(11,23,40,.94);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 60px #0005}.panel h2{font-size:16px;margin:0 0 16px}label{font-size:12px;color:#aac0d9;display:block;margin:12px 0 6px}input{width:100%;padding:12px;background:#071322;border:1px solid #23415f;color:white;border-radius:10px}button{font:inherit}.full{width:100%;margin-top:15px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:13px 10px;border-bottom:1px solid #18304a;text-align:left;font-size:13px}.table th{color:#86a3c3;font-weight:600}.mail{font-weight:700}.sub{color:var(--muted);font-size:12px;margin-top:3px}.actions{display:flex;gap:7px;flex-wrap:wrap}.small{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:#0d2035;color:#dcecff;cursor:pointer}.small.blue{background:#1679df;border-color:#1679df}.small.red{background:#30141c;color:#ffadba;border-color:#5d2531}.notice{margin:0 0 15px;padding:11px 13px;border-radius:10px;background:#0a2036;color:#a9d3ff;border:1px solid #1c4771;font-size:13px;display:none}.urlbox{margin-top:14px;display:none}.urlbox textarea{width:100%;height:90px;background:#071322;color:#bfe0ff;border:1px solid #244664;border-radius:10px;padding:10px;resize:none}.empty{color:var(--muted);padding:30px;text-align:center}.pill{font-size:11px;border:1px solid #225a46;color:#77e5b7;padding:4px 7px;border-radius:99px}
+@media(max-width:800px){.wrap{padding:15px}.grid{grid-template-columns:1fr}.top{align-items:flex-start;gap:12px}.table{min-width:720px}.scroll{overflow:auto}}
+</style></head>
+<body><div class="wrap">
+<div class="top"><div class="title"><h1>LoginMail • Admin</h1><p>Kelola email <b>loginmail-mfistore.my.id</b> melalui smtp.dev</p></div><button class="btn" id="logout">Keluar</button></div>
+<div id="notice" class="notice"></div>
+<div class="grid">
+<section class="panel"><h2>Tambah Mailbox User</h2>
+<label>Username</label><input id="username" placeholder="contoh: user01">
+<label>Password Mail</label><input id="pw" type="password" placeholder="Minimal 6 karakter">
+<button class="btn primary full" id="create">+ Buat Email</button>
+<div class="urlbox" id="urlbox"><label>Link akses user (berlaku 30 hari)</label><textarea id="accessurl" readonly></textarea><button class="small blue" id="copy">Salin Link</button></div>
+</section>
+<section class="panel"><h2>Daftar Mailbox <span class="pill" id="count">0</span></h2>
+<div class="scroll"><table class="table"><thead><tr><th>Email</th><th>Terpakai</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</div></div>
+<script>
+const $=x=>document.getElementById(x);
+function notice(t){$('notice').style.display='block';$('notice').textContent=t}
+async function api(url,opt={}){let r=await fetch(url,opt);let d=await r.json().catch(()=>({}));if(r.status===401){location.href='/'}if(!r.ok)throw new Error(d.error||'Gagal');return d}
+async function load(){let d=await api('/api/admin/accounts');let arr=d.member||[];$('count').textContent=arr.length;$('rows').innerHTML=arr.map(a=>`<tr><td><div class="mail">${esc(a.address)}</div><div class="sub">ID: ${esc(a.id)}</div></td><td>${a.used||0} / ${a.quota||0}</td><td>${a.isActive?'<span class="pill">Aktif</span>':'Nonaktif'}</td><td><div class="actions"><button class="small blue" onclick="link('${a.id}')">Link User</button><button class="small red" onclick="del('${a.id}','${esc(a.address)}')">Hapus</button></div></td></tr>`).join('')||'<tr><td colspan="4" class="empty">Belum ada mailbox.</td></tr>'}
+async function link(id){try{let d=await api('/api/admin/accounts/'+id+'/access',{method:'POST'});$('accessurl').value=d.url;$('urlbox').style.display='block';$('accessurl').select();notice('Link akses berhasil dibuat. Kirim link ini kepada user.')}catch(e){notice(e.message)}}
+async function del(id,email){if(!confirm('Hapus mailbox '+email+'? Semua pesan di mailbox ini ikut terhapus oleh smtp.dev.'))return;try{await api('/api/admin/accounts/'+id,{method:'DELETE'});notice('Mailbox dihapus.');load()}catch(e){notice(e.message)}}
+$('create').onclick=async()=>{let u=$('username').value.trim().toLowerCase(),p=$('pw').value;if(!u||!p)return notice('Username dan password wajib diisi.');try{let a=await api('/api/admin/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});$('username').value='';$('pw').value='';notice('Email '+a.address+' berhasil dibuat.');load();setTimeout(()=>link(a.id),150)}catch(e){notice(e.message)}}
+$('copy').onclick=async()=>{await navigator.clipboard.writeText($('accessurl').value);notice('Link berhasil disalin.')}
+$('logout').onclick=async()=>{await fetch('/api/auth/logout',{method:'POST'});location.href='/'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+load();
+</script></body></html>
