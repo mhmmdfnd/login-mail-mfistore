@@ -1,8 +1,12 @@
 {
-  "name": "amf-dummy-mail",
+  "name": "loginmail-mfistore",
   "version": "1.0.0",
   "private": true,
-  "description": "AMF GameStore Dummy Mail - Mail.tm webmail for Vercel",
-  "scripts": { "dev": "vercel dev", "start": "vercel dev" },
-  "dependencies": { "nodemailer": "^7.0.6" }
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {}
 }
